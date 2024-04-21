@@ -20,25 +20,56 @@ type Processor struct {
 
 // Video is the type for a video that we wish to process
 type Video struct {
-	ID int
-	InputFile string
-	OutputDir string // pathname to where we want video to show up
+	ID           int
+	InputFile    string
+	OutputDir    string // pathname to where we want video to show up
 	EncodingType string
-	NotifyChan chan ProcessingMessage
-	// Options *VideoOpts
+	NotifyChan   chan ProcessingMessage
+	Options *VideoOpts
 	Encoder Processor
 }
+
+type VideoOpts struct {
+	RenameOutput bool
+	SegmentDuration int // mp4 and hls format; produces a lot of ts files - knowing how long segments will be
+	MaxRate1080p string
+	MaxRate720p string
+	MaxRate420p string 
+}
+
+func (vd *VideoDispatcher) NewVideo(id int, input, output, encType string, notifyChan chan ProcessingMessage, opts *VideoOpts) Video {
+	if opts == nil {
+		opts = &VideoOpts{}
+	}
+	return Video{
+		ID: id,
+		InputFile: input,
+		OutputDir: output,
+		EncodingType: encType,
+		NotifyChan: notifyChan,
+		Encoder: vd.Processor,
+		Options: opts,
+	}
+} 
+func (v *Video) encode() {
+
+}
+
+//  New creates and returns a video dispatcher
 func New(jobQueue chan VideoProcessingJob, maxWorkers int) *VideoDispatcher {
 	workerPool := make(chan chan VideoProcessingJob, maxWorkers)
 
 	// TODO implement processor logic
-	p := Processor{}
-	return &VideoDispatcher{
-		jobQueue: jobQueue,
-		maxWorkers: maxWorkers,
-		WorkerPool: workerPool,
-		Processor: p,
+	var e VideoEncoder
+	p := Processor{
+		Engine: &e,
 	}
 
+	return &VideoDispatcher{
+		jobQueue:   jobQueue,
+		maxWorkers: maxWorkers,
+		WorkerPool: workerPool,
+		Processor:  p,
+	}
 
 }
